@@ -1,3 +1,4 @@
+
 delete from kbo_stat.tb_betman_sd_game_anal_allocation;
              
 INSERT INTO kbo_stat.tb_betman_sd_game_anal_allocation
@@ -38,12 +39,9 @@ SELECT
 
 (((             ROUND(SUM(CASE WHEN A.ALLOCATION_WIN = B.ALLOCATION_WIN AND A.BET_OPTION = B.BET_OPTION AND A.SPORT_TYPE = B.SPORT_TYPE THEN B.HIT_GAME_CNT ELSE NULL END) / SUM(CASE WHEN A.ALLOCATION_WIN = B.ALLOCATION_WIN AND A.BET_OPTION = B.BET_OPTION AND A.SPORT_TYPE = B.SPORT_TYPE THEN B.ALL_GAME_CNT ELSE NULL END) , 2 )  ) *  A.ALLOCATION_WIN ) - 1 ) * 10000 AS win_all_ev,
  
- 
 (((  ROUND( SUM(CASE WHEN A.ALLOCATION_DRAW NOT IN ( 0,1 ) AND A.ALLOCATION_DRAW = B.ALLOCATION_DRAW AND A.BET_OPTION = B.BET_OPTION AND A.SPORT_TYPE = B.SPORT_TYPE THEN B.HIT_GAME_CNT ELSE NULL END) / SUM(CASE WHEN A.ALLOCATION_DRAW NOT IN ( 0,1 ) AND A.ALLOCATION_DRAW = B.ALLOCATION_DRAW AND A.BET_OPTION = B.BET_OPTION AND A.SPORT_TYPE = B.SPORT_TYPE THEN B.ALL_GAME_CNT ELSE NULL END) ,2 ) ) *   A.ALLOCATION_DRAW ) - 1 ) * 10000 AS draw_all_ev,
 
 (((     ROUND(SUM(CASE WHEN A.ALLOCATION_LOSE = B.ALLOCATION_LOSE AND A.BET_OPTION = B.BET_OPTION AND A.SPORT_TYPE = B.SPORT_TYPE THEN B.HIT_GAME_CNT ELSE NULL END) / SUM(CASE WHEN A.ALLOCATION_LOSE = B.ALLOCATION_LOSE AND A.BET_OPTION = B.BET_OPTION AND A.SPORT_TYPE = B.SPORT_TYPE THEN B.ALL_GAME_CNT ELSE NULL END) ,2 )  ) * A.ALLOCATION_LOSE ) - 1 ) * 10000 AS lose_le_ev, A.ROUND
-
-
         FROM
             (
                 SELECT GAME_NUMBER, SPORT_TYPE, LEAGUE, BET_OPTION, ALLOCATION_WIN, ALLOCATION_DRAW, ALLOCATION_LOSE,HOME_TEAM,AWAY_TEAM,A.ROUND
@@ -54,20 +52,20 @@ SELECT
             (
                 SELECT SPORT_TYPE, BET_OPTION, LEAGUE, ALLOCATION_WIN, 0 AS ALLOCATION_DRAW, 0 AS ALLOCATION_LOSE
                      , COUNT(1) AS ALL_GAME_CNT
-                     , SUM(CASE WHEN GAME_RESULT = '승' AND BET_OPTION IN ('일반','핸디캡','승1패','승5패') THEN 1
-                                WHEN GAME_RESULT = 'U' AND BET_OPTION = '언더오버' THEN 1 ELSE 0 END ) AS HIT_GAME_CNT
-                     , ROUND( SUM(CASE WHEN GAME_RESULT = '승' AND BET_OPTION IN ('일반','핸디캡','승1패','승5패') THEN 1
-                                       WHEN GAME_RESULT = 'U' AND BET_OPTION = '언더오버' THEN 1 ELSE 0 END ) / COUNT(1) ,2 ) AS HIT_GAME_RATE
+                     , SUM(CASE WHEN GAME_RESULT = '승' AND BET_OPTION IN ('승패','핸디캡','승1패','승5패','승무패','전반 승무패','전반 핸디캡','소수핸디캡') THEN 1
+                                WHEN GAME_RESULT = '언더' AND BET_OPTION in ('언더오버','전반 언더오버') THEN 1 ELSE 0 END ) AS HIT_GAME_CNT
+                     , ROUND( SUM(CASE WHEN GAME_RESULT = '승' AND BET_OPTION IN ('승패','핸디캡','승1패','승5패','승무패','전반 승무패','전반 핸디캡','소수핸디캡') THEN 1
+                                       WHEN GAME_RESULT = '언더' AND BET_OPTION in ('언더오버','전반 언더오버')  THEN 1 ELSE 0 END ) / COUNT(1) ,2 ) AS HIT_GAME_RATE
                 FROM kbo_stat.tb_betman_sd_game_result
                 GROUP BY SPORT_TYPE, BET_OPTION, LEAGUE, ALLOCATION_WIN
                 UNION ALL
                 
                 SELECT SPORT_TYPE, BET_OPTION,LEAGUE, 0 AS ALLOCATION_WIN, ALLOCATION_DRAW, 0 AS ALLOCATION_LOSE
                      , COUNT(1) AS ALL_GAME_CNT
-                     , SUM(CASE WHEN GAME_RESULT = '무' AND BET_OPTION IN ('일반','핸디캡') THEN 1
+                     , SUM(CASE WHEN GAME_RESULT = '무' AND BET_OPTION IN ('승패','핸디캡','승무패','승무패','전반 승무패','전반 핸디캡','소수핸디캡') THEN 1
                                  WHEN GAME_RESULT = '①' AND BET_OPTION = '승1패' THEN 1
                                  WHEN GAME_RESULT = '⑤' AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) AS HIT_GAME_CNT
-                     , ROUND( SUM(CASE WHEN GAME_RESULT = '무' AND BET_OPTION IN ('일반','핸디캡') THEN 1
+                     , ROUND( SUM(CASE WHEN GAME_RESULT = '무' AND BET_OPTION IN ('승패','핸디캡') THEN 1
                                         WHEN GAME_RESULT = '①' AND BET_OPTION = '승1패' THEN 1
                                         WHEN GAME_RESULT = '⑤' AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) / COUNT(1) ,2 ) AS HIT_GAME_RATE
                 FROM kbo_stat.tb_betman_sd_game_result
@@ -76,10 +74,10 @@ SELECT
                 UNION ALL
                 SELECT SPORT_TYPE, BET_OPTION, LEAGUE, 0 AS ALLOCATION_WIN, 0 AS ALLOCATION_DRAW, ALLOCATION_LOSE
                      , COUNT(1) AS ALL_GAME_CNT
-                     , SUM(CASE WHEN GAME_RESULT = '패' AND BET_OPTION IN ('일반','핸디캡','승1패','승5패') THEN 1
-                                WHEN GAME_RESULT = 'O' AND BET_OPTION = '언더오버' THEN 1 ELSE 0 END ) AS HIT_GAME_CNT
-                     , ROUND( SUM(CASE WHEN GAME_RESULT = '패' AND BET_OPTION IN ('일반','핸디캡','승1패','승5패') THEN 1
-                                       WHEN GAME_RESULT = 'O' AND BET_OPTION = '언더오버' THEN 1 ELSE 0 END ) / COUNT(1) ,2 ) AS HIT_GAME_RATE
+                     , SUM(CASE WHEN GAME_RESULT = '패' AND BET_OPTION IN ('승패','핸디캡','승1패','승5패','승무패','전반 승무패','전반 핸디캡','소수핸디캡') THEN 1
+                                WHEN GAME_RESULT = '오버' AND BET_OPTION in ('언더오버','전반 언더오버')   THEN 1 ELSE 0 END ) AS HIT_GAME_CNT
+                     , ROUND( SUM(CASE WHEN GAME_RESULT = '패' AND BET_OPTION IN ('승패','핸디캡','승1패','승5패') THEN 1
+                                       WHEN GAME_RESULT = '오버' AND BET_OPTION in ('언더오버','전반 언더오버')   THEN 1 ELSE 0 END ) / COUNT(1) ,2 ) AS HIT_GAME_RATE
                 FROM kbo_stat.tb_betman_sd_game_result
                 
                 GROUP BY SPORT_TYPE, BET_OPTION, LEAGUE, ALLOCATION_LOSE
