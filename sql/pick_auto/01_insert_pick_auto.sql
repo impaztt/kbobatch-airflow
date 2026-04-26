@@ -1,4 +1,4 @@
-b_pick 
+INSERT INTO kbo_stat.tb_pick
 		SELECT
     X.PICK_SEQ,
     X.PAY_ID,
