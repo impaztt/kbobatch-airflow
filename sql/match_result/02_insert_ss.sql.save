@@ -1,0 +1,215 @@
+insert into kbo_stat.tb_match_result
+WITH BALANCE AS 
+(
+SELECT A.TEAMCODE, SUM(100점환산) AS 100점환산, ROUND( ( SUM(100점환산) - 300 ) / 300 , 3 ) +1  AS RATE
+FROM 
+(
+-- 1
+ SELECT * 
+ FROM (
+   WITH RecentGames AS (
+      SELECT 
+          home_team_code,
+          winner,
+          ROW_NUMBER() OVER (
+              PARTITION BY home_team_code
+              ORDER BY STR_TO_DATE(game_date, '%Y-%m-%d') DESC
+          ) AS rn
+      FROM tb_game_info
+  )
+  SELECT 
+      a.home_team_code AS teamCode, '1 최근경기승리' AS SEQ , SUM(CASE WHEN a.winner = 'HOME' THEN 1 ELSE 0 END) AS winCount , SUM(CASE WHEN a.winner = 'HOME' THEN 1 ELSE 0 END) * 10 AS 100점환산
+  FROM RecentGames a
+  JOIN tb_team_info b
+    ON a.home_team_code = b.team_code
+  WHERE a.rn <= 10
+  AND a.home_team_code = 'SS'
+  GROUP BY a.home_team_code 
+ ) A
+
+ 
+  UNION ALL 
+ -- 2
+ SELECT *
+ FROM (
+  WITH GAME AS (
+     select a_code, h_code, max(id) as id
+         from tb_result_tab_game_info
+         where   gdate BETWEEN DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 DAY), '%Y%m%d') + 0
+            AND DATE_FORMAT(CURDATE(), '%Y%m%d') + 0
+         and  ( a_code = 'SS' OR h_code  = 'SS' )
+         group by gdate, a_code, h_code
+         
+ ),
+ 
+ PITCHING_BOX AS (
+     select a.team_pitching_boxscore_id as id , b.a_code, b.h_code
+         from tb_result_tab_record_data a , GAME b 
+   where a.game_info_id = b.id 
+ ) ,
+ 
+ 
+ SCORE AS (
+ 
+ SELECT a.home_id , a.away_id , b.a_code, b.h_code
+ FROM tb_result_tab_team_pitching_boxscore a , PITCHING_BOX b 
+ where a.id  = b.id
+ 
+  
+ ),
+ 
+ 
+ SCORE_RESULT AS (
+ 
+ select a.*,b.*,'HOME' AS HW -- HOME
+ from tb_result_tab_team_pitching_boxscore_away a , SCORE b 
+ where a.id = b.home_id
+ and b.h_code <> 'SS'
+ 
+ union all
+ 
+ select a.*,b.*,'AWAY' AS HW -- HOME
+ from tb_result_tab_team_pitching_boxscore_away a , SCORE b 
+ where a.id = b.away_id
+ and b.a_code <> 'SS'
+ 
+ )
+  
+ SELECT 'SS' AS teamCode , '2 타율'  AS SEQ ,  round( sum(hit) / sum(ab), 3)   ,  round( sum(hit) / sum(ab), 3) * 3.3 * 100 
+ from SCORE_RESULT  a  
+ ) A 
+ 
+ UNION ALL
+ -- 3
+ SELECT *
+ FROM (
+ WITH GAME AS (
+     select a_code, h_code, max(id) as id
+         from tb_result_tab_game_info
+         where   gdate BETWEEN DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 DAY), '%Y%m%d') + 0
+            AND DATE_FORMAT(CURDATE(), '%Y%m%d') + 0
+         and ( a_code = 'SS' OR h_code  = 'SS' )
+         group by gdate, a_code, h_code
+         
+ ),
+ 
+ PITCHING_BOX AS (
+     select a.team_pitching_boxscore_id as id , b.a_code, b.h_code
+         from tb_result_tab_record_data a , GAME b 
+   where a.game_info_id = b.id 
+ ),
+ 
+ SCORE AS (
+ 
+ SELECT a.home_id , a.away_id , b.a_code, b.h_code
+ FROM tb_result_tab_team_pitching_boxscore a , PITCHING_BOX b 
+ where a.id  = b.id
+ 
+  
+  
+  
+ ),
+ 
+ SCORE_RESULT AS (
+ 
+ select a.*,b.*, 'HOME' AS HW -- HOME
+ from tb_result_tab_team_pitching_boxscore_away a  , SCORE b
+ where a.id = b.home_id
+ and b.h_code = 'SS'
+ 
+ union all
+ 
+ select a.*,b.*, 'AWAY' AS HW -- HOME
+ from tb_result_tab_team_pitching_boxscore_away a  , SCORE  b
+ where a.id = b.away_id
+ and b.a_code = 'SS'
+ 
+ )
+   
+ SELECT 'SS', '3 방어율', ROUND( (SUM(er) / SUM(inn)) * 9 , 2) AS 전체방어율  , 100- ( ROUND( (SUM(er) / SUM(inn)) * 9 , 2) - 3.85 ) * 15  AS 100점환산 
+ from SCORE_RESULT  a   
+ ) A
+ 
+ UNION ALL 
+ -- 4
+ SELECT *
+ FROM 
+ ( 
+ WITH param AS (
+     SELECT  
+         home_team_code ,
+         away_team_code 
+     FROM tb_game_info  a 
+     WHERE home_team_code = 'SS'
+     AND DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 0 DAY), '%Y-%m-%d') = a.game_date
+     
+ ),
+ -- ① 시즌 맞대결 : 홈/원정 모두 포함
+ matchup AS (
+     SELECT
+         p.home_team_code,
+         p.away_team_code,
+         COUNT(1) AS total_games,
+         -- 홈팀이 홈일 때, 홈 승리 + 원정일 때, 원정 승리 합산
+         SUM(
+             CASE
+                 WHEN (b.team_code = p.home_team_code AND c.team_code = p.away_team_code AND winner = 'HOME') THEN 1
+                 WHEN (b.team_code = p.away_team_code AND c.team_code = p.home_team_code AND winner = 'AWAY') THEN 1
+                 ELSE 0
+             END
+         ) AS home_team_wins
+     FROM tb_game_info a
+     JOIN tb_team_info b ON a.home_team_code = b.team_code
+     JOIN tb_team_info c ON a.away_team_code = c.team_code
+     JOIN param p ON 1 = 1
+     WHERE a.game_date BETWEEN '2025-03-22' AND '2035-10-31'
+       AND (
+             (b.team_code = p.home_team_code AND c.team_code = p.away_team_code) OR
+             (b.team_code = p.away_team_code AND c.team_code = p.home_team_code)
+           )
+     GROUP BY p.home_team_code, p.away_team_code
+ ),
+ -- ② 시즌 홈경기 승률 (전체 홈경기 기준)
+ home_games AS (
+     SELECT
+         p.home_team_code,
+         COUNT(1) AS total_home_games,
+         SUM(CASE WHEN winner = 'HOME' THEN 1 ELSE 0 END) AS home_team_home_wins
+     FROM tb_game_info a
+     JOIN tb_team_info b ON a.home_team_code = b.team_code
+     JOIN param p ON 1 = 1
+     WHERE a.game_date BETWEEN '2025-03-22' AND '2035-10-31'
+       AND b.team_code = p.home_team_code
+     GROUP BY p.home_team_code
+ ),
+ -- ③ 시즌 원정경기 승률 (전체 원정경기 기준)
+ away_games AS (
+     SELECT
+         p.home_team_code,
+         COUNT(1) AS total_away_games,
+         SUM(CASE WHEN winner = 'AWAY' THEN 1 ELSE 0 END) AS home_team_away_wins
+     FROM tb_game_info a
+     JOIN tb_team_info c ON a.away_team_code = c.team_code
+     JOIN param p ON 1 = 1
+     WHERE a.game_date BETWEEN '2025-03-22' AND '2035-10-31'
+       AND c.team_code = p.home_team_code
+     GROUP BY p.home_team_code
+ )
+ SELECT
+   p.home_team_code  AS 홈팀명,
+    '4 맞대결',
+ --    c.team_name AS 상대팀명, 
+     ROUND(m.home_team_wins / NULLIF(m.total_games, 0), 3) AS 시즌맞대결승률
+     ,ROUND(m.home_team_wins / NULLIF(m.total_games, 0), 3) * 100  AS 100점환산 
+  
+ FROM param p
+ LEFT JOIN matchup m ON p.home_team_code = m.home_team_code AND p.away_team_code = m.away_team_code
+ LEFT JOIN home_games h ON p.home_team_code = h.home_team_code
+ LEFT JOIN away_games a ON p.home_team_code = a.home_team_code
+ LEFT JOIN tb_team_info b ON p.home_team_code = b.team_code
+ LEFT JOIN tb_team_info c ON p.away_team_code = c.team_code
+ 
+ )  A 
+ 
+ UNION ALL 
+
