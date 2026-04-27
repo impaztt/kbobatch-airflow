@@ -1,6 +1,8 @@
+
+
 INSERT INTO kbo_stat.tb_pick
-		SELECT
-    X.PICK_SEQ,
+SELECT
+    (SELECT IFNULL(MAX(PICK_ID), 0) + 1 FROM kbo_stat.tb_pick) AS PICK_SEQ,
     X.PAY_ID,
     X.USER_ID,
     X.PROD_ID,
@@ -23,126 +25,134 @@ INSERT INTO kbo_stat.tb_pick
     'N',
     NOW(),
     NOW(),
-    null,
+    NULL,
     NULL
 FROM (
-    /* =========================================================
-       1) PICK_MP < 2.00 : 기존 1픽 로직 그대로
-       ========================================================= */
     SELECT
-        S.PICK_SEQ AS PICK_SEQ,
-        S.PAY_ID,
-        S.USER_ID,
-        S.PROD_ID,
-        S.GAME_NUMBER,
-        S.LEAGUE,
-        S.ROUND,
-        S.KBO_PICK,
-        S.SPORT_TYPE,
-        S.BET_OPTION,
-        S.ALLOCATION_WIN,
-        S.ALLOCATION_DRAW,
-        S.ALLOCATION_LOSE,
-        S.HOME_TEAM,
-        S.AWAY_TEAM
+        A.PAY_ID,
+        A.USER_ID,
+        A.PROD_ID,
+        B.GAME_NUMBER,
+        B.LEAGUE,
+        B.ROUND,
+        B.KBO_PICK,
+        B.SPORT_TYPE,
+        B.BET_OPTION,
+        B.ALLOCATION_WIN,
+        B.ALLOCATION_DRAW,
+        B.ALLOCATION_LOSE,
+        B.HOME_TEAM,
+        B.AWAY_TEAM
     FROM (
         SELECT
-            A.PICK_SEQ,
-            A.PAY_ID,
-            A.USER_ID,
-            A.PROD_ID,
-            KBO_PICK,
-            B.GAME_NUMBER,
-            B.LEAGUE,
-            B.ROUND,
-            B.SPORT_TYPE,
-            B.BET_OPTION,
-            B.ALLOCATION_WIN,
-            B.ALLOCATION_DRAW,
-            B.ALLOCATION_LOSE,
-            B.HOME_TEAM,
-            B.AWAY_TEAM
+            PAY_ID,
+            USER_ID,
+            PROD_ID,
+            PROD_NM,
+            PRICE,
+            PICK_MP,
+            PICK_CNT,
+            REMAIN_PICK_CNT,
+            PAY_DT
         FROM (
-            /* ===== 원본 A 그대로 ===== */
-            SELECT PAY_ID,USER_ID,PROD_ID,PROD_NM,PRICE,PICK_MP,PICK_CNT,잔여픽개수,PAY_DT,PICK_SEQ 
-            FROM (
-                SELECT
-                    A.PAY_ID,
-                    A.USER_ID,
-                    A.PROD_ID,
-                    B.PROD_NM,
-                    B.PRICE,
-                    B.PICK_MP,
-                    A.PICK_CNT,
-                    IFNULL(B.PICK_CNT - IFNULL(C.CNT,0),0) AS 잔여픽개수,
-                    A.PAY_DT, 
-                    MAX(PICK_SEQ) OVER  () + ROW_NUMBER() OVER (ORDER BY PICK_SEQ)   AS PICK_SEQ
-                   
-                FROM kbo_stat.tb_pay_hist A
-                LEFT OUTER JOIN kbo_stat.tb_prod_list B
-                    ON A.PROD_ID = B.PROD_ID
-                LEFT OUTER JOIN (
-                    SELECT
-                        USER_ID,
-                        PROD_ID,
-                        PAY_ID,
-                        CNT,
-                        MAX(PICK_SEQ) OVER () AS PICK_SEQ
-                    FROM (
-                        SELECT
-                            USER_ID,
-                            PROD_ID,
-                            PAY_ID,
-                            COUNT(1) AS CNT,
-                            MAX(PICK_ID) AS PICK_SEQ
-                        FROM kbo_stat.tb_pick
-                        WHERE KBO_PICK IS NOT NULL
-                        GROUP BY
-                            USER_ID,
-                            PROD_ID,
-                            PAY_ID
-                    ) A
-                ) C
-                    ON ( A.PROD_ID = C.PROD_ID
-                   AND A.USER_ID = C.USER_ID
-                   AND A.PAY_ID = C.PAY_ID)
-                   WHERE A.STATUS = 'PAID'            
-                   ) A
-            WHERE ( 잔여픽개수 <> 0 or 잔여픽개수 > 0 )
-              AND PAY_ID > 53
-              
-              
-                        
-        ) A,
-        (
-            /* ===== 원본 B 그대로 ===== */
             SELECT
-                GAME_NUMBER,
-                SPORT_TYPE,
-                LEAGUE,
-                ROUND,
-                BET_OPTION,
-                CASE WHEN A.WINLEAGUEHITRATE BETWEEN 0.60 AND 0.99 THEN '승'
-                     WHEN A.LOSELEAGUEHITRATE BETWEEN 0.60 AND 0.99 THEN '패' ELSE NULL END  AS KBO_PICK,
-                     
-                HOME_TEAM,
-                AWAY_TEAM,
-                ALLOCATION_WIN,
-                ALLOCATION_DRAW,
-                ALLOCATION_LOSE,
-                WINLEAGUEHITRATE,
-                DRAWLEAGUEHITRATE,
-                LOSELEAGUEHITRATE
-            FROM kbo_stat.tb_betman_sd_game_anal_allocation A
-            WHERE ( A.WINLEAGUEHITRATE BETWEEN 0.60 AND 0.99 
-                 or A.LOSELEAGUEHITRATE BETWEEN 0.60 AND 0.99)
-              AND A.BET_OPTION IN ('핸디캡', '일반')
-            ORDER BY A.WINLEAGUEHITRATE DESC
-        ) B
-        WHERE A.PICK_MP < 3.5
-           AND ( A.PICK_MP <= B.ALLOCATION_WIN
-         or   A.PICK_MP <= B.ALLOCATION_LOSE )   
-         ORDER BY RAND()
-        LIMIT 1
-     ) S
+                A.PAY_ID,
+                A.USER_ID,
+                A.PROD_ID,
+                B.PROD_NM,
+                B.PRICE,
+                B.PICK_MP,
+                A.PICK_CNT,
+                IFNULL(B.PICK_CNT - IFNULL(C.CNT, 0), 0) AS REMAIN_PICK_CNT,
+                A.PAY_DT
+            FROM kbo_stat.tb_pay_hist A
+            LEFT JOIN kbo_stat.tb_prod_list B
+                ON A.PROD_ID = B.PROD_ID
+            LEFT JOIN (
+                SELECT
+                    USER_ID,
+                    PROD_ID,
+                    PAY_ID,
+                    COUNT(1) AS CNT
+                FROM kbo_stat.tb_pick
+                WHERE KBO_PICK IS NOT NULL
+                GROUP BY
+                    USER_ID,
+                    PROD_ID,
+                    PAY_ID
+            ) C
+                ON A.PROD_ID = C.PROD_ID
+               AND A.USER_ID = C.USER_ID
+               AND A.PAY_ID = C.PAY_ID
+            WHERE A.STATUS = 'PAID'
+        ) PAY_TARGET
+        WHERE REMAIN_PICK_CNT > 0
+          AND PAY_ID > 53
+    ) A
+    JOIN (
+        SELECT
+            GAME_NUMBER,
+            SPORT_TYPE,
+            LEAGUE,
+            ROUND,
+            BET_OPTION,
+            CASE
+                WHEN WINLEAGUEHITRATE BETWEEN 0.60 AND 0.99 THEN '승'
+                WHEN LOSELEAGUEHITRATE BETWEEN 0.60 AND 0.99 THEN '패'
+                ELSE NULL
+            END AS KBO_PICK,
+            HOME_TEAM,
+            AWAY_TEAM,
+            ALLOCATION_WIN,
+            ALLOCATION_DRAW,
+            ALLOCATION_LOSE,
+            WINLEAGUEHITRATE,
+            DRAWLEAGUEHITRATE,
+            LOSELEAGUEHITRATE
+        FROM kbo_stat.tb_betman_sd_game_anal_allocation
+        WHERE (
+                WINLEAGUEHITRATE BETWEEN 0.60 AND 0.99
+             OR LOSELEAGUEHITRATE BETWEEN 0.60 AND 0.99
+        )
+          AND BET_OPTION IN ('핸디캡', '일반')
+    ) B
+        ON 1 = 1
+    WHERE A.PICK_MP < 3.5
+
+      /* 픽 방향과 배당 조건을 맞춤 */
+      AND (
+            (B.KBO_PICK = '승' AND A.PICK_MP <= B.ALLOCATION_WIN)
+         OR (B.KBO_PICK = '패' AND A.PICK_MP <= B.ALLOCATION_LOSE)
+      )
+
+      /* 핵심: 같은 유저에게 이미 지급된 동일 픽은 제외 */
+      AND NOT EXISTS (
+          SELECT 1
+          FROM kbo_stat.tb_pick P
+          WHERE P.USER_ID = A.USER_ID
+            AND P.YEAR = '2026'
+
+            AND P.ROUND COLLATE utf8mb4_unicode_ci
+                = B.ROUND COLLATE utf8mb4_unicode_ci
+
+            AND P.GAME_NUMBER COLLATE utf8mb4_unicode_ci
+                = B.GAME_NUMBER COLLATE utf8mb4_unicode_ci
+
+            AND P.LEAGUE COLLATE utf8mb4_unicode_ci
+                = B.LEAGUE COLLATE utf8mb4_unicode_ci
+
+            AND P.SPORT_TYPE COLLATE utf8mb4_unicode_ci
+                = B.SPORT_TYPE COLLATE utf8mb4_unicode_ci
+
+            AND P.BET_OPTION COLLATE utf8mb4_unicode_ci
+                = B.BET_OPTION COLLATE utf8mb4_unicode_ci
+
+            AND P.KBO_PICK COLLATE utf8mb4_unicode_ci
+                = B.KBO_PICK COLLATE utf8mb4_unicode_ci
+
+            AND P.KBO_PICK IS NOT NULL
+      )
+    ORDER BY RAND()
+    LIMIT 1
 ) X;
+
