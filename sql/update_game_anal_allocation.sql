@@ -63,11 +63,11 @@ SELECT
                 SELECT SPORT_TYPE, BET_OPTION,LEAGUE, 0 AS ALLOCATION_WIN, ALLOCATION_DRAW, 0 AS ALLOCATION_LOSE
                      , COUNT(1) AS ALL_GAME_CNT
                      , SUM(CASE WHEN GAME_RESULT = '무' AND BET_OPTION IN ('승패','핸디캡','승무패','승무패','전반 승무패','전반 핸디캡','소수핸디캡') THEN 1
-                                 WHEN GAME_RESULT = '①' AND BET_OPTION = '승1패' THEN 1
-                                 WHEN GAME_RESULT = '⑤' AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) AS HIT_GAME_CNT
+                                 WHEN GAME_RESULT IN ( '1', '①'  ) AND BET_OPTION = '승1패' THEN 1
+                                 WHEN GAME_RESULT IN ( '5',  '⑤') AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) AS HIT_GAME_CNT
                      , ROUND( SUM(CASE WHEN GAME_RESULT = '무' AND BET_OPTION IN ('승패','핸디캡') THEN 1
-                                        WHEN GAME_RESULT = '①' AND BET_OPTION = '승1패' THEN 1
-                                        WHEN GAME_RESULT = '⑤' AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) / COUNT(1) ,2 ) AS HIT_GAME_RATE
+                                        WHEN GAME_RESULT IN( '1', '①' ) AND BET_OPTION = '승1패' THEN 1
+                                        WHEN GAME_RESULT IN( '5',  '⑤' ) AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) / COUNT(1) ,2 ) AS HIT_GAME_RATE
                 FROM kbo_stat.tb_betman_sd_game_result
                 
                 GROUP BY SPORT_TYPE, BET_OPTION, LEAGUE, ALLOCATION_DRAW
