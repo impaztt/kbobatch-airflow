@@ -8,7 +8,9 @@ ON (
     AND a.bet_option COLLATE utf8mb4_general_ci = b.bet_option COLLATE utf8mb4_general_ci 
     AND a.home_team COLLATE utf8mb4_general_ci = b.home_team COLLATE utf8mb4_general_ci
     AND a.away_team COLLATE utf8mb4_general_ci = b.away_team COLLATE utf8mb4_general_ci
-    AND b.PICK_ID >= '18'
+    AND a.round COLLATE utf8mb4_general_ci = b.round COLLATE utf8mb4_general_ci
+	
+AND b.PICK_ID >= '18'
     AND b.pick_result = '경기 전'
     AND a.game_result <> '경기전'
 ) 
