@@ -16,7 +16,8 @@ AND b.PICK_ID >= '18'
 ) 
 SET 
     b.pick_result = (
-        CASE 
+        CASE WHEN   a.game_result COLLATE utf8mb4_general_ci = '취소' THEN '취소'
+ 
             WHEN b.kbo_pick COLLATE utf8mb4_general_ci = a.game_result COLLATE utf8mb4_general_ci 
             THEN '적중' 
             ELSE '비적중' 
