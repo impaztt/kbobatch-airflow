@@ -76,7 +76,8 @@ FROM (
                     COUNT(1) AS CNT
                 FROM kbo_stat.tb_pick
                 WHERE KBO_PICK IS NOT NULL
-                GROUP BY
+AND GAME_RESULT <> '취소'                
+GROUP BY
                     USER_ID,
                     PROD_ID,
                     PAY_ID
