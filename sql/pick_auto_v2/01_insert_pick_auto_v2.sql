@@ -94,7 +94,8 @@ FROM (
                 FROM kbo_stat.tb_pick
                 WHERE KBO_PICK IS NOT NULL
                   AND IFNULL(PICK_RESULT, '경기 전') <> '비적중'
-                GROUP BY
+ AND IFNULL(GAME_RESULT,'X') <> '취소'                
+GROUP BY
                     USER_ID,
                     PROD_ID,
                     PAY_ID
