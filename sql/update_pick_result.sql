@@ -6,8 +6,9 @@ ON (
     AND a.year COLLATE utf8mb4_general_ci = b.year COLLATE utf8mb4_general_ci 
     AND a.sport_type COLLATE utf8mb4_general_ci = b.sport_type COLLATE utf8mb4_general_ci 
     AND a.bet_option COLLATE utf8mb4_general_ci = b.bet_option COLLATE utf8mb4_general_ci 
-    AND a.home_team COLLATE utf8mb4_general_ci = b.home_team COLLATE utf8mb4_general_ci
-    AND a.away_team COLLATE utf8mb4_general_ci = b.away_team COLLATE utf8mb4_general_ci
+        AND REPLACE(a.home_team,' ','') COLLATE utf8mb4_general_ci = REPLACE(b.home_team,' ','') COLLATE utf8mb4_general_ci
+    AND REPLACE(a.away_team,' ','') COLLATE utf8mb4_general_ci = REPLACE(b.away_team,' ','') COLLATE utf8mb4_general_ci
+
    
 	AND REPLACE(TRIM(a.round), ' ', '') COLLATE utf8mb4_general_ci = REPLACE(TRIM(b.round), ' ', '') COLLATE utf8mb4_general_ci 	
 
