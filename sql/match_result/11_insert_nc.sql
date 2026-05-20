@@ -472,7 +472,7 @@ SELECT
                 AND DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 0 DAY), '%Y%m%d') =  DATE_FORMAT(A.DEADLINE_DATE, '%Y%m%d')
                 AND A.BET_OPTION NOT IN ( 'SUM','전반' ) 
                 AND B.TEAM_CODE = 'NC'
-                AND A.HOME_TEAM COLLATE utf8mb4_unicode_ci = B.TEAM_NAME
+                AND replace(A.HOME_TEAM,' ','') COLLATE utf8mb4_unicode_ci = replace(B.TEAM_NAME,' ','')
  
             ) A LEFT OUTER JOIN
             (
@@ -490,11 +490,11 @@ SELECT
                 SELECT SPORT_TYPE, BET_OPTION,LEAGUE, 0 AS ALLOCATION_WIN, ALLOCATION_DRAW, 0 AS ALLOCATION_LOSE
                      , COUNT(1) AS ALL_GAME_CNT
                      , SUM(CASE WHEN GAME_RESULT = '무' AND BET_OPTION IN ('승패','핸디캡','승무패','전반 승무패') THEN 1
-                                 WHEN GAME_RESULT IN (1, '①') AND BET_OPTION = '승1패' THEN 1
-                                 WHEN GAME_RESULT IN (5, '⑤') AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) AS HIT_GAME_CNT
+                                 WHEN GAME_RESULT IN ('1', '①') AND BET_OPTION = '승1패' THEN 1
+                                 WHEN GAME_RESULT IN ('5', '⑤') AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) AS HIT_GAME_CNT
                      , ROUND( SUM(CASE WHEN GAME_RESULT = '무' AND BET_OPTION IN ('일반','핸디캡','승무패','전반 승무패') THEN 1
-                                        WHEN GAME_RESULT IN  (1, '①')  AND BET_OPTION = '승1패' THEN 1
-                                        WHEN GAME_RESULT IN  (5, '⑤')  AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) / COUNT(1) ,2 ) AS HIT_GAME_RATE
+                                        WHEN GAME_RESULT IN  ('1', '①')  AND BET_OPTION = '승1패' THEN 1
+                                        WHEN GAME_RESULT IN  ('5', '⑤')  AND BET_OPTION = '승5패' THEN 1 ELSE 0 END ) / COUNT(1) ,2 ) AS HIT_GAME_RATE
                 FROM kbo_stat.tb_betman_sd_game_result
                 where SPORT_TYPE = '야구'
                 GROUP BY SPORT_TYPE, BET_OPTION, LEAGUE, ALLOCATION_DRAW
