@@ -114,7 +114,7 @@ GROUP BY
                 WINLEAGUEHITRATE BETWEEN 0.60 AND 0.99
              OR LOSELEAGUEHITRATE BETWEEN 0.60 AND 0.99
         )
-          AND BET_OPTION IN ('핸디캡', '일반')
+          AND BET_OPTION IN ('일반')
     ) B
         ON 1 = 1
     WHERE A.PICK_MP < 3.5
