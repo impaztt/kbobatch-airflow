@@ -134,8 +134,8 @@ GROUP BY
             ROUND,
             BET_OPTION,
             CASE
-                WHEN WINLEAGUEHITRATE BETWEEN 0.60 AND 0.99 THEN '승'
-                WHEN LOSELEAGUEHITRATE BETWEEN 0.60 AND 0.99 THEN '패'
+                WHEN WINLEAGUEHITRATE BETWEEN 0.65 AND 0.99 THEN '승'
+                WHEN LOSELEAGUEHITRATE BETWEEN 0.65 AND 0.99 THEN '패'
                 ELSE NULL
             END AS KBO_PICK,
             HOME_TEAM,
@@ -148,10 +148,10 @@ GROUP BY
             LOSELEAGUEHITRATE
         FROM kbo_stat.tb_betman_sd_game_anal_allocation
         WHERE (
-                WINLEAGUEHITRATE BETWEEN 0.60 AND 0.99
-             OR LOSELEAGUEHITRATE BETWEEN 0.60 AND 0.99
+                WINLEAGUEHITRATE BETWEEN 0.65 AND 0.99
+             OR LOSELEAGUEHITRATE BETWEEN 0.65 AND 0.99
         )
-          AND BET_OPTION IN ('핸디캡', '일반')
+          AND BET_OPTION IN ('승패')
     ) B
         ON 1 = 1
     WHERE A.PICK_MP < 3.5
