@@ -146,7 +146,7 @@ FROM (
             ALLOCATION_DRAW,
             ALLOCATION_LOSE
         FROM kbo_stat.tb_betman_sd_game_anal_allocation
-        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+        WHERE BET_OPTION IN ('승패','승무패',  '핸디캡', '전반 승무패')
           AND WINLEAGUEHITRATE BETWEEN 0.59 AND 0.99
 
         UNION ALL
@@ -165,7 +165,7 @@ FROM (
             ALLOCATION_DRAW,
             ALLOCATION_LOSE
         FROM kbo_stat.tb_betman_sd_game_anal_allocation
-        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+        WHERE BET_OPTION IN ('승패','승무패',  '핸디캡', '전반 승무패')
           AND LOSELEAGUEHITRATE BETWEEN 0.59 AND 0.99
 
         UNION ALL
@@ -188,7 +188,7 @@ FROM (
             ALLOCATION_DRAW,
             ALLOCATION_LOSE
         FROM kbo_stat.tb_betman_sd_game_anal_allocation
-        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+        WHERE BET_OPTION IN ('승패', '승무패', '핸디캡', '전반 승무패')
           AND COALESCE(WIN_ALL_EV, 0) >= 3500
 
         UNION ALL
@@ -207,7 +207,7 @@ FROM (
             ALLOCATION_DRAW,
             ALLOCATION_LOSE
         FROM kbo_stat.tb_betman_sd_game_anal_allocation
-        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+        WHERE BET_OPTION IN ('승패','승무패',  '핸디캡', '전반 승무패')
           AND COALESCE(DRAW_ALL_EV, 0) >= 3500
 
         UNION ALL
@@ -226,7 +226,7 @@ FROM (
             ALLOCATION_DRAW,
             ALLOCATION_LOSE
         FROM kbo_stat.tb_betman_sd_game_anal_allocation
-        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+        WHERE BET_OPTION IN ('승패','승무패',  '핸디캡', '전반 승무패')
           AND COALESCE(LOSE_ALL_EV, 0) >= 3500
     ) B
         ON 1 = 1
