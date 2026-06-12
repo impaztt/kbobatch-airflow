@@ -19,7 +19,7 @@ SQL_FILES = [
     dag_id="insert_pick_auto_dag",
     description="매 15분마다 tb_pick 자동 픽 INSERT 후 UPDATE를 순차 실행하는 배치",
     start_date=pendulum.datetime(2026, 4, 26, tz="Asia/Seoul"),
-    schedule="*/15 * * * *",
+    schedule="*/3 * * * *",
     catchup=False,
     max_active_runs=1,
     tags=["kbo", "mysql", "pick", "15min"],
