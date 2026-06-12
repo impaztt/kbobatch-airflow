@@ -1,5 +1,3 @@
-
-
 INSERT INTO kbo_stat.tb_pick
 SELECT
     (SELECT IFNULL(MAX(PICK_ID), 0) + 1 FROM kbo_stat.tb_pick) AS PICK_SEQ,
@@ -76,7 +74,7 @@ FROM (
                     COUNT(1) AS CNT
                 FROM kbo_stat.tb_pick
                 WHERE KBO_PICK IS NOT NULL
-GROUP BY
+                GROUP BY
                     USER_ID,
                     PROD_ID,
                     PAY_ID
@@ -88,44 +86,123 @@ GROUP BY
         ) PAY_TARGET
         WHERE REMAIN_PICK_CNT > 0
           AND PAY_ID > 53
+          AND USER_ID <= 99999
+          AND PROD_ID IN (25, 26, 29, 30)
     ) A
     JOIN (
         SELECT
+            'RATE' AS PICK_RULE,
             GAME_NUMBER,
             SPORT_TYPE,
             LEAGUE,
             ROUND,
             BET_OPTION,
-            CASE
-                WHEN WINLEAGUEHITRATE BETWEEN 0.60 AND 0.99 THEN '승'
-                WHEN LOSELEAGUEHITRATE BETWEEN 0.60 AND 0.99 THEN '패'
-                ELSE NULL
-            END AS KBO_PICK,
+            '승' AS KBO_PICK,
             HOME_TEAM,
             AWAY_TEAM,
             ALLOCATION_WIN,
             ALLOCATION_DRAW,
-            ALLOCATION_LOSE,
-            WINLEAGUEHITRATE,
-            DRAWLEAGUEHITRATE,
-            LOSELEAGUEHITRATE
+            ALLOCATION_LOSE
         FROM kbo_stat.tb_betman_sd_game_anal_allocation
-        WHERE (
-                WINLEAGUEHITRATE BETWEEN 0.60 AND 0.99
-             OR LOSELEAGUEHITRATE BETWEEN 0.60 AND 0.99
-        )
-          AND BET_OPTION IN ('일반')
+        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+          AND WINLEAGUEHITRATE BETWEEN 0.59 AND 0.99
+
+        UNION ALL
+
+        SELECT
+            'RATE' AS PICK_RULE,
+            GAME_NUMBER,
+            SPORT_TYPE,
+            LEAGUE,
+            ROUND,
+            BET_OPTION,
+            '패' AS KBO_PICK,
+            HOME_TEAM,
+            AWAY_TEAM,
+            ALLOCATION_WIN,
+            ALLOCATION_DRAW,
+            ALLOCATION_LOSE
+        FROM kbo_stat.tb_betman_sd_game_anal_allocation
+        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+          AND LOSELEAGUEHITRATE BETWEEN 0.59 AND 0.99
+
+        UNION ALL
+
+        SELECT
+            'EV' AS PICK_RULE,
+            GAME_NUMBER,
+            SPORT_TYPE,
+            LEAGUE,
+            ROUND,
+            BET_OPTION,
+            '승' AS KBO_PICK,
+            HOME_TEAM,
+            AWAY_TEAM,
+            ALLOCATION_WIN,
+            ALLOCATION_DRAW,
+            ALLOCATION_LOSE
+        FROM kbo_stat.tb_betman_sd_game_anal_allocation
+        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+          AND COALESCE(WIN_ALL_EV, 0) >= 3500
+
+        UNION ALL
+
+        SELECT
+            'EV' AS PICK_RULE,
+            GAME_NUMBER,
+            SPORT_TYPE,
+            LEAGUE,
+            ROUND,
+            BET_OPTION,
+            '무' AS KBO_PICK,
+            HOME_TEAM,
+            AWAY_TEAM,
+            ALLOCATION_WIN,
+            ALLOCATION_DRAW,
+            ALLOCATION_LOSE
+        FROM kbo_stat.tb_betman_sd_game_anal_allocation
+        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+          AND COALESCE(DRAW_ALL_EV, 0) >= 3500
+
+        UNION ALL
+
+        SELECT
+            'EV' AS PICK_RULE,
+            GAME_NUMBER,
+            SPORT_TYPE,
+            LEAGUE,
+            ROUND,
+            BET_OPTION,
+            '패' AS KBO_PICK,
+            HOME_TEAM,
+            AWAY_TEAM,
+            ALLOCATION_WIN,
+            ALLOCATION_DRAW,
+            ALLOCATION_LOSE
+        FROM kbo_stat.tb_betman_sd_game_anal_allocation
+        WHERE BET_OPTION IN ('승패', '핸디캡', '전반 승무패')
+          AND COALESCE(LOSE_ALL_EV, 0) >= 3500
     ) B
         ON 1 = 1
-    WHERE A.PICK_MP < 3.5
+    WHERE (
+            (
+                A.PROD_ID IN (25, 26)
+                AND B.PICK_RULE = 'RATE'
+            )
+         OR (
+                A.PROD_ID IN (29, 30)
+                AND B.PICK_RULE = 'EV'
+            )
+    )
 
-      /* 픽 방향과 배당 조건을 맞춤 */
+      /* 픽 방향과 배당 조건 */
       AND (
             (B.KBO_PICK = '승' AND A.PICK_MP <= B.ALLOCATION_WIN)
+         OR (B.KBO_PICK = '무' AND A.PICK_MP <= B.ALLOCATION_DRAW)
          OR (B.KBO_PICK = '패' AND A.PICK_MP <= B.ALLOCATION_LOSE)
       )
 
-      /* 핵심: 같은 유저에게 이미 지급된 동일 픽은 제외 */
+      /* 같은 유저에게 이미 지급된 동일 픽은 제외 */
       AND NOT EXISTS (
           SELECT 1
           FROM kbo_stat.tb_pick P
@@ -155,4 +232,3 @@ GROUP BY
     ORDER BY RAND()
     LIMIT 1
 ) X;
-
