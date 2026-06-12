@@ -17,9 +17,9 @@ SQL_FILES = [
 
 @dag(
     dag_id="insert_pick_auto_v2_dag",
-    description="매 20분마다 tb_pick 자동 픽 INSERT 후 GAME_DATE UPDATE를 순차 실행하는 배치",
+    description="매 5분마다 tb_pick 자동 픽 INSERT 후 GAME_DATE UPDATE를 순차 실행하는 배치",
     start_date=pendulum.datetime(2026, 4, 26, tz="Asia/Seoul"),
-    schedule="*/20 * * * *",
+    schedule="*/5 * * * *",
     catchup=False,
     max_active_runs=1,
     tags=["kbo", "mysql", "pick", "20min"],
